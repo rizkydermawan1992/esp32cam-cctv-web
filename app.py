@@ -65,14 +65,13 @@ def setting():
         return redirect(url_for("home"))
     return render_template("setting.html")
 
-@app.route("/send_message", methods=["POST"])
+@app.route("/send_message", methods=["GET"])
 def send_message():
-    if not isActiveNotification:
+    if isActiveNotification == 0:
         flash("Telegram notifications are disabled.", "warning")
         return redirect(url_for("home"))
 
-    message = request.form["message"] 
-    
+    message = "lorem ipsum"
     # Send the message to Telegram
     url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
     payload = {

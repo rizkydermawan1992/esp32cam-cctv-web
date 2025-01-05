@@ -6,6 +6,6 @@
   "telegram": {
     "token_telegram": "5325460852:AAF6CjBZSZMavP8BPDz_j8o4bNyoAkIRnZk",
     "chat_id": "441884684",
-    "isActive": true
+    "isActive": 1
   }
 }
