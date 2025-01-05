@@ -1,15 +1,19 @@
 from flask import Flask, render_template, request, redirect, flash, url_for, session
 import json
-from werkzeug.security import generate_password_hash, check_password_hash
+import requests
+from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Ganti dengan kunci rahasia Anda
 
-# Load email dan password dari config.json
+# Load file config.json
 with open("config.json", "r") as config_file:
     config = json.load(config_file)
-    stored_email = config.get("email")
-    stored_password_hash = config.get("password")
+    stored_email = config.get("login", {}).get("email")
+    stored_password_hash = config.get("login", {}).get("password")
+    telegram_token = config.get("telegram", {}).get("token_telegram")
+    telegram_chat_id = config.get("telegram", {}).get("chat_id")
+    isActiveNotification = config.get("telegram", {}).get("isActive")
 
 
 @app.route("/")
@@ -60,6 +64,29 @@ def setting():
         flash("Please log in to access this page.", "warning")
         return redirect(url_for("home"))
     return render_template("setting.html")
+
+@app.route("/send_message", methods=["POST"])
+def send_message():
+    if not isActiveNotification:
+        flash("Telegram notifications are disabled.", "warning")
+        return redirect(url_for("home"))
+
+    message = request.form["message"] 
+    
+    # Send the message to Telegram
+    url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
+    payload = {
+        "chat_id": telegram_chat_id,
+        "text": message
+    }
+    response = requests.post(url, data=payload)
+    
+    if response.status_code == 200:
+        flash("Message sent to Telegram successfully!", "success")
+    else:
+        flash("Failed to send message to Telegram.", "danger")
+    
+    return redirect(url_for("home"))
 
 if __name__ == "__main__":
     app.run(debug=True)

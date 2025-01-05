@@ -1,5 +1,11 @@
 {
+  "login": {
     "email": "admin@gmail.com",
     "password": "scrypt:32768:8:1$dDcX0klkktRcDekw$6f0a4c3a913ab7f94ed16ed17f3e2c83c335730866fcc02e4d51880c6a9b0dc5a3647d68f66264ac4ed4791ba70aaabf5e26f66b97cc852343a25de654d35d59"
+  },
+  "telegram": {
+    "token_telegram": "5325460852:AAF6CjBZSZMavP8BPDz_j8o4bNyoAkIRnZk",
+    "chat_id": "441884684",
+    "isActive": true
   }
-  
+}
