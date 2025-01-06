@@ -1,7 +1,10 @@
 from flask import Flask, render_template, request, redirect, flash, url_for, session
 import json
 import requests
+import os
 from werkzeug.security import check_password_hash
+from werkzeug.utils import secure_filename
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Ganti dengan kunci rahasia Anda
@@ -51,12 +54,32 @@ def logout():
     flash("You have been logged out.", "info")
     return redirect(url_for("home"))
 
-@app.route("/data")
-def data():
+@app.route("/gallery")
+def gallery():
     if "logged_in" not in session:
         flash("Please log in to access this page.", "warning")
         return redirect(url_for("home"))
-    return render_template("data.html")
+
+    # Path ke direktori static/uploads
+    upload_folder = os.path.join(app.static_folder, "uploads")
+
+    # Ambil daftar file di folder uploads, urutkan dari yang terbaru
+    images_with_timestamps = []
+    if os.path.exists(upload_folder):
+        images = [file for file in os.listdir(upload_folder) if file.lower().endswith(('png', 'jpg', 'jpeg', 'gif'))]
+        images.sort(key=lambda x: os.path.getmtime(os.path.join(upload_folder, x)), reverse=True)
+
+        # Tambahkan data timestamp untuk setiap gambar
+        for image_file in images:
+            file_path = os.path.join(upload_folder, image_file)
+            timestamp = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime("%Y-%m-%d %H:%M:%S")
+            images_with_timestamps.append({
+                "filename": os.path.join("uploads/", image_file),
+                "timestamp": timestamp
+            })
+
+    # Kirim daftar file dan timestamp ke template
+    return render_template("gallery.html", images=images_with_timestamps)
 
 @app.route("/setting")
 def setting():
@@ -65,27 +88,65 @@ def setting():
         return redirect(url_for("home"))
     return render_template("setting.html")
 
-@app.route("/send_message", methods=["GET"])
+@app.route("/form")
+def form():
+    return render_template("form.html")
+
+@app.route("/send_message", methods=["POST"])
 def send_message():
     if isActiveNotification == 0:
         flash("Telegram notifications are disabled.", "warning")
         return redirect(url_for("home"))
 
-    message = "lorem ipsum"
-    # Send the message to Telegram
-    url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
-    payload = {
-        "chat_id": telegram_chat_id,
-        "text": message
-    }
-    response = requests.post(url, data=payload)
-    
+    # Ambil pesan dari form
+    message = request.form["message"]
+
+    # Ambil file gambar dari form
+    image = request.files.get("image")
+
+    if image:
+        # Simpan gambar ke direktori lokal dengan nama file unik berbasis timestamp
+        upload_folder = "static/uploads"
+        os.makedirs(upload_folder, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        unique_filename = f"{timestamp}_{secure_filename(image.filename)}"
+        image_path = os.path.join(upload_folder, unique_filename)
+        image.save(image_path)
+
+        # Kirim gambar ke Telegram
+        url = f"https://api.telegram.org/bot{telegram_token}/sendPhoto"
+        payload = {
+            "chat_id": telegram_chat_id,
+            "caption": message
+        }
+        with open(image_path, "rb") as file:
+            files = {"photo": (unique_filename, file, image.mimetype)}
+            response = requests.post(url, data=payload, files=files)
+    else:
+        # Kirim pesan teks ke Telegram jika tidak ada gambar
+        url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
+        payload = {
+            "chat_id": telegram_chat_id,
+            "text": message
+        }
+        response = requests.post(url, data=payload)
+
+    # Tampilkan notifikasi berdasarkan hasil pengiriman
     if response.status_code == 200:
         flash("Message sent to Telegram successfully!", "success")
     else:
         flash("Failed to send message to Telegram.", "danger")
-    
+
     return redirect(url_for("home"))
+
+@app.route('/delete_image', methods=['POST'])
+def delete_image():
+    image_name = request.form.get('image_name')
+    image_path = os.path.join(app.static_folder, 'uploads', image_name)
+    if os.path.exists(image_path):
+        os.remove(image_path)
+    return redirect(url_for('gallery'))
+
 
 if __name__ == "__main__":
     app.run(debug=True)

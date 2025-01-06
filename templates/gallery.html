@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+</head>
+
+<body>
+    <!-- templates/data.html -->
+    {% extends "base.html" %}
+
+    {% block title %}Data{% endblock %}
+
+    {% block content %}
+    <div class="container">
+        <h3 class="text-center mb-3">GALLERY</h3>
+        <div class="row">
+            {% for image in images %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <img src="{{ url_for('static', filename=image.filename) }}" class="card-img-top" alt="Image">
+                    <div class="card-body">
+                        <p class="card-text text-center">Stored on: {{ image.timestamp }}</p>
+                        <form action="{{ url_for('delete_image') }}" method="POST">
+                            <input type="hidden" name="image_name" value="{{ image }}">
+                            <button type="submit" class="btn btn-sm btn-danger btn-block"><i class="fas fa-trash"></i>
+                                Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endblock %}
+</body>
+
+</html>
