@@ -4,23 +4,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
+    <title>Live Cam</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 
 <body>
-    <!-- templates/livecam.html -->
     {% extends "base.html" %}
 
-    {% block title %}Data{% endblock %}
+    {% block title %}Live Cam{% endblock %}
 
     {% block content %}
-    <h3 class="text-center">LIVE CAM</h3>
+    <div class="container mt-4">
+        <h3 class="text-center">LIVE CAM</h3>
+        <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#addCameraModal">Add Camera</button>
+        <div id="livecam-container" class="row"></div>
+    </div>
 
-    <img src="http://192.168.141.67/mjpeg/1" alt="">
+    <!-- Add Camera Modal -->
+    <div class="modal fade" id="addCameraModal" tabindex="-1" aria-labelledby="addCameraModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCameraModalLabel">Add Camera</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCameraForm">
+                        <div class="form-group">
+                            <label for="cameraID">ID</label>
+                            <input type="number" class="form-control" id="cameraID" placeholder="Enter camera ID" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cameraLabel">Label</label>
+                            <input type="text" class="form-control" id="cameraLabel" placeholder="Enter camera label" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cameraIPAddress">IP Address</label>
+                            <input type="text" class="form-control" id="cameraIPAddress" placeholder="Enter IP address" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveCameraButton">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('livecam-container');
+
+        // Fetch ESP32-CAM data from the server
+        function loadCameras() {
+            fetch('/get-livecam-data')
+                .then(response => response.json())
+                .then(esp32cams => {
+                    container.innerHTML = '';
+                    esp32cams.forEach(cam => {
+                        const card = document.createElement('div');
+                        card.className = 'col-md-4 mb-4';
+
+                        card.innerHTML = `
+                            <div class="card">
+                                <div class="card-header text-center">
+                                    <h5>${cam.label}</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <img src="http://${cam.ip_address}/mjpeg/1" alt="Camera ${cam.id}" class="img-fluid mb-3">
+                                    <div>
+                                        <label> ID: ${cam.id} </label>
+                                    </div>
+                                    <div>
+                                        <label>IP Address: ${cam.ip_address}</label>
+                                    </div>
+                                    <div>
+                                        <label for="pan-${cam.id}">Pan: </label>
+                                        <input type="range" id="pan-${cam.id}" min="0" max="180" value="${cam.servo_position.pan}" class="slider" data-id="${cam.id}" data-type="pan">
+                                    </div>
+                                    <div>
+                                        <label for="tilt-${cam.id}">Tilt: </label>
+                                        <input type="range" id="tilt-${cam.id}" min="0" max="180" value="${cam.servo_position.tilt}" class="slider" data-id="${cam.id}" data-type="tilt">
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        container.appendChild(card);
+                    });
+                })
+                .catch(error => console.error('Error fetching ESP32-CAM data:', error));
+        }
+
+        $(document).on('input', '.slider', function () {
+            const camId = $(this).data('id');
+            const type = $(this).data('type');
+            const value = $(this).val();
+
+            fetch('/update-servo-position', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: camId, type, value: parseInt(value) }),
+            })
+                .then(response => response.json())
+                .then(data => console.log(data.message))
+                .catch(error => console.error('Error updating config.json:', error));
+        });
+
+        document.getElementById('saveCameraButton').addEventListener('click', () => {
+            const label = document.getElementById('cameraLabel').value;
+            const ip_address = document.getElementById('cameraIPAddress').value;
+            const id = document.getElementById('cameraID').value;
+
+            fetch('/add-camera', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ label, ip_address, id }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.message);
+                    $('#addCameraModal').modal('hide');
+                    loadCameras();
+                })
+                .catch(error => console.error('Error adding camera:', error));
+        });
+
+        // Initial load
+        loadCameras();
+    </script>
 
     {% endblock %}
-
-
 </body>
 
 </html>

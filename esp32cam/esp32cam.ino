@@ -8,6 +8,7 @@ const char* ssid = "Realme";
 const char* password = "12345678";
 
 String serverName = "192.168.141.139";   // REPLACE WITH YOUR Raspberry Pi IP ADDRESS
+//String serverName = "esp32cam-cctv-web.vercel.app";
 String serverPath = "/send_message";     // The serverPath should be upload.php
 const int serverPort = 5000;
 
