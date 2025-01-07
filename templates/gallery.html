@@ -21,12 +21,12 @@
             <div class="col-md-4 mb-3">
                 <div class="card">
                     <img src="{{ url_for('static', filename=image.filename) }}" class="card-img-top" alt="Image">
-                    <div class="card-body">
-                        <p class="card-text text-center">Stored on: {{ image.timestamp }}</p>
+                    <div class="card-body" style="display:flex;">
+                        <p class="card-text text-center mx-3">Stored on: {{ image.timestamp }}</p>
+                        <!-- Tambahkan form untuk tombol delete -->
                         <form action="{{ url_for('delete_image') }}" method="POST">
-                            <input type="hidden" name="image_name" value="{{ image }}">
-                            <button type="submit" class="btn btn-sm btn-danger btn-block"><i class="fas fa-trash"></i>
-                                Delete</button>
+                            <input type="hidden" name="filename" value="{{ image.filename }}">
+                            <button class="btn btn-sm btn-danger" type="submit"><i class="fas fa-trash"></i></button>
                         </form>
                     </div>
                 </div>
@@ -34,6 +34,7 @@
             {% endfor %}
         </div>
     </div>
+    
     {% endblock %}
 </body>
 

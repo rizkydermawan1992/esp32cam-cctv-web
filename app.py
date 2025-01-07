@@ -99,10 +99,11 @@ def send_message():
         return redirect(url_for("home"))
 
     # Ambil pesan dari form
-    message = request.form["message"]
+    # message = request.form["message"]
+    message = "Motion Detected!!!"
 
     # Ambil file gambar dari form
-    image = request.files.get("image")
+    image = request.files.get("imageFile")
 
     if image:
         # Simpan gambar ke direktori lokal dengan nama file unik berbasis timestamp
@@ -141,12 +142,18 @@ def send_message():
 
 @app.route('/delete_image', methods=['POST'])
 def delete_image():
-    image_name = request.form.get('image_name')
-    image_path = os.path.join(app.static_folder, 'uploads', image_name)
-    if os.path.exists(image_path):
-        os.remove(image_path)
-    return redirect(url_for('gallery'))
+    filename = request.form['filename']
+    file_path = os.path.join(app.static_folder, filename)
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            flash('Image deleted successfully!', 'success')
+        else:
+            flash('File not found.', 'error')
+    except Exception as e:
+        flash(f'An error occurred: {e}', 'error')
+    return redirect(url_for('gallery'))  # Redirect ke halaman gallery
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
