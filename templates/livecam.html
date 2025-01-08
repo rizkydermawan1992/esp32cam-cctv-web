@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Cam</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
@@ -16,42 +17,55 @@
     {% block title %}Live Cam{% endblock %}
 
     {% block content %}
-    <div class="container mt-4">
-        <h3 class="text-center">LIVE CAM</h3>
-        <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#addCameraModal">Add Camera</button>
-        <div id="livecam-container" class="row"></div>
+    <div class="container">
+        <div class="text-center">
+            <h2>LIVE CAM</h2>
+        </div>
+        <div class="d-flex justify-content-end mb-3">
+            <button class="btn btn-primary" data-toggle="modal" data-target="#addCameraModal">
+                <i class="fas fa-plus"></i> Add Camera
+            </button>
+        </div>
+        <div id="livecam-container" class="row">
+            <!-- Dynamic content will be added here -->
+        </div>
     </div>
 
     <!-- Add Camera Modal -->
-    <div class="modal fade" id="addCameraModal" tabindex="-1" aria-labelledby="addCameraModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" id="addCameraModal" tabindex="-1" role="dialog" aria-labelledby="addCameraModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addCameraModalLabel">Add Camera</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="addCameraForm">
+                <form id="addCameraForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addCameraModalLabel">Add Camera</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
                         <div class="form-group">
-                            <label for="cameraID">ID</label>
-                            <input type="number" class="form-control" id="cameraID" placeholder="Enter camera ID" required>
+                            <label for="cameraId">Camera ID</label>
+                            <input type="number" id="cameraId" name="id" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label for="cameraLabel">Label</label>
-                            <input type="text" class="form-control" id="cameraLabel" placeholder="Enter camera label" required>
+                            <input type="text" id="cameraLabel" name="label" class="form-control" required>
                         </div>
                         <div class="form-group">
-                            <label for="cameraIPAddress">IP Address</label>
-                            <input type="text" class="form-control" id="cameraIPAddress" placeholder="Enter IP address" required>
+                            <label for="cameraIp">IP Address</label>
+                            <input type="text" id="cameraIp" name="ip_address" class="form-control" required>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="saveCameraButton">Save</button>
-                </div>
+                        <div class="form-group">
+                            <label for="cameraTopic">MQTT Topic</label>
+                            <input type="text" id="cameraTopic" name="topic" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save Camera</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -67,81 +81,110 @@
                     container.innerHTML = '';
                     esp32cams.forEach(cam => {
                         const card = document.createElement('div');
-                        card.className = 'col-md-4 mb-4';
+                        card.className = 'col-md-6 col-lg-4 mb-4';
 
                         card.innerHTML = `
-                            <div class="card">
-                                <div class="card-header text-center">
-                                    <h5>${cam.label}</h5>
-                                </div>
-                                <div class="card-body text-center">
-                                    <img src="http://${cam.ip_address}/mjpeg/1" alt="Camera ${cam.id}" class="img-fluid mb-3">
-                                    <div>
-                                        <label> ID: ${cam.id} </label>
-                                    </div>
-                                    <div>
-                                        <label>IP Address: ${cam.ip_address}</label>
-                                    </div>
-                                    <div>
-                                        <label for="pan-${cam.id}">Pan: </label>
-                                        <input type="range" id="pan-${cam.id}" min="0" max="180" value="${cam.servo_position.pan}" class="slider" data-id="${cam.id}" data-type="pan">
-                                    </div>
-                                    <div>
-                                        <label for="tilt-${cam.id}">Tilt: </label>
-                                        <input type="range" id="tilt-${cam.id}" min="0" max="180" value="${cam.servo_position.tilt}" class="slider" data-id="${cam.id}" data-type="tilt">
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                                            <div class="card shadow-sm rounded border-0">
+                                                <div class="card-header bg-light text-center">
+                                                    <h5 class="font-weight-bold">${cam.label}</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <img src="http://${cam.ip_address}/mjpeg/1" 
+                                                        alt="Camera ${cam.id}" 
+                                                        class="img-fluid rounded mb-3" 
+                                                        onerror="this.onerror=null;this.src='/static/images/offline.png';"
+                                                        width="640" height="480">
+                                                    <table class="table table-bordered">
+                                                        <tbody>
+                                                            <tr>
+                                                                <th scope="row">Camera ID</th>
+                                                                <td>${cam.id}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th scope="row">IP Address</th>
+                                                                <td>${cam.ip_address}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th scope="row">MQTT Topic</th>
+                                                                <td>${cam.topic}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th scope="row">Pan Servo</th>
+                                                                <td><input type="range" id="pan-${cam.id}" min="0" max="180" value="${cam.servo_position.pan}" class="slider" data-id="${cam.id}" data-type="pan"></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th scope="row">Tilt Servo</th>
+                                                                <td><input type="range" id="tilt-${cam.id}" min="0" max="180" value="${cam.servo_position.tilt}" class="slider" data-id="${cam.id}" data-type="tilt"></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th scope="row">Action</th>
+                                                                <td>
+                                                                    <button type="button" class="btn btn-sm btn-success"><i class="fas fa-edit"></i> Edit</button>
+                                                                    <button type="button" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Delete</button>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        `;
+
 
                         container.appendChild(card);
+                    });
+
+                    // Add event listeners for sliders
+                    document.querySelectorAll('.slider').forEach(slider => {
+                        slider.addEventListener('input', event => {
+                            const sliderElement = event.target;
+                            const id = parseInt(sliderElement.dataset.id);
+                            const type = sliderElement.dataset.type;
+                            const value = parseInt(sliderElement.value);
+
+                            // Update servo position on the server
+                            fetch('/update-servo-position', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    id,
+                                    type,
+                                    value
+                                })
+                            });
+                        });
                     });
                 })
                 .catch(error => console.error('Error fetching ESP32-CAM data:', error));
         }
 
-        $(document).on('input', '.slider', function () {
-            const camId = $(this).data('id');
-            const type = $(this).data('type');
-            const value = $(this).val();
+        // Add camera form submission
+        document.getElementById('addCameraForm').addEventListener('submit', event => {
+            event.preventDefault();
 
-            fetch('/update-servo-position', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id: camId, type, value: parseInt(value) }),
-            })
-                .then(response => response.json())
-                .then(data => console.log(data.message))
-                .catch(error => console.error('Error updating config.json:', error));
-        });
-
-        document.getElementById('saveCameraButton').addEventListener('click', () => {
-            const label = document.getElementById('cameraLabel').value;
-            const ip_address = document.getElementById('cameraIPAddress').value;
-            const id = document.getElementById('cameraID').value;
-
+            const formData = Object.fromEntries(new FormData(event.target).entries());
             fetch('/add-camera', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ label, ip_address, id }),
-            })
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
                 .then(response => response.json())
                 .then(data => {
-                    console.log(data.message);
-                    $('#addCameraModal').modal('hide');
-                    loadCameras();
-                })
-                .catch(error => console.error('Error adding camera:', error));
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        $('#addCameraModal').modal('hide');
+                        loadCameras();
+                    }
+                });
         });
 
         // Initial load
         loadCameras();
     </script>
-
     {% endblock %}
 </body>
 

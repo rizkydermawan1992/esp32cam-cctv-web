@@ -62,7 +62,7 @@ def get_livecam_data():
 @app.route("/add-camera", methods=["POST"])
 def add_camera():
     data = request.get_json()
-    if not all(k in data for k in ("label", "ip_address", "id")):
+    if not all(k in data for k in ("id", "label", "ip_address", "topic")):
         return jsonify({"error": "Missing required fields"}), 400
 
     try:

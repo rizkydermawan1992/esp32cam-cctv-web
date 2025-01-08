@@ -13,46 +13,61 @@
             {
                 "id": 1,
                 "label": "Ruang Tamu",
-                "ip_address": "192.168.1.101",
+                "ip_address": "192.168.141.67",
+                "topic": "esp32cam/349eif",
                 "servo_position": {
-                    "pan": 0,
-                    "tilt": 0
+                    "pan": 113,
+                    "tilt": 175
                 }
             },
             {
                 "id": 2,
                 "label": "Balkon",
                 "ip_address": "192.168.1.102",
+                "topic": "esp32cam/654ftf",
                 "servo_position": {
-                    "pan": 0,
-                    "tilt": 0
+                    "pan": 120,
+                    "tilt": 1
                 }
             },
             {
                 "id": 3,
                 "label": "Garasi",
                 "ip_address": "192.168.1.103",
+                "topic": "esp32cam/706gcw",
                 "servo_position": {
-                    "pan": 0,
-                    "tilt": 0
+                    "pan": 168,
+                    "tilt": 61
                 }
             },
             {
+                "id": 4,
                 "label": "Kitchen",
                 "ip_address": "192.168.1.104",
-                "id": 4,
+                "topic": "esp32cam/342dvk",
+                "servo_position": {
+                    "pan": 173,
+                    "tilt": 175
+                }
+            },
+            {
+                "id": 5,
+                "label": "Garage",
+                "ip_address": "192.168.1.105",
+                "topic": "esp32ca,/232fdk",
+                "servo_position": {
+                    "pan": 161,
+                    "tilt": 158
+                }
+            },
+            {
+                "id": 6,
+                "label": "Gudang",
+                "ip_address": "192.168.1.106",
+                "topic": "esp32cam/303dkw",
                 "servo_position": {
                     "pan": 180,
                     "tilt": 180
-                }
-            },
-            {
-                "label": "Bedroom",
-                "ip_address": "192.168.1.105",
-                "id": 5,
-                "servo_position": {
-                    "pan": 180,
-                    "tilt": 0
                 }
             }
         ]
