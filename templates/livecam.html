@@ -84,50 +84,66 @@
                         card.className = 'col-md-6 col-lg-4 mb-4';
 
                         card.innerHTML = `
-                                            <div class="card shadow-sm rounded border-0">
-                                                <div class="card-header bg-light text-center">
-                                                    <h5 class="font-weight-bold">${cam.label}</h5>
-                                                </div>
-                                                <div class="card-body">
-                                                    <img src="http://${cam.ip_address}/mjpeg/1" 
-                                                        alt="Camera ${cam.id}" 
-                                                        class="img-fluid rounded mb-3" 
-                                                        onerror="this.onerror=null;this.src='/static/images/offline.png';"
-                                                        width="640" height="480">
-                                                    <table class="table table-bordered">
-                                                        <tbody>
-                                                            <tr>
-                                                                <th scope="row">Camera ID</th>
-                                                                <td>${cam.id}</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row">IP Address</th>
-                                                                <td>${cam.ip_address}</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row">MQTT Topic</th>
-                                                                <td>${cam.topic}</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row">Pan Servo</th>
-                                                                <td><input type="range" id="pan-${cam.id}" min="0" max="180" value="${cam.servo_position.pan}" class="slider" data-id="${cam.id}" data-type="pan"></td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row">Tilt Servo</th>
-                                                                <td><input type="range" id="tilt-${cam.id}" min="0" max="180" value="${cam.servo_position.tilt}" class="slider" data-id="${cam.id}" data-type="tilt"></td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row">Action</th>
-                                                                <td>
-                                                                    <button type="button" class="btn btn-sm btn-success"><i class="fas fa-edit"></i> Edit</button>
-                                                                    <button type="button" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Delete</button>
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        `;
+                                <div class="card shadow-sm rounded border-0">
+                                    <div class="card-header bg-light text-center">
+                                        <h5 class="font-weight-bold">${cam.label}</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <img src="http://${cam.ip_address}/mjpeg/1" 
+                                            alt="Live view from Camera ${cam.id}" 
+                                            class="img-fluid rounded mb-3" 
+                                            onerror="this.onerror=null;this.src='/static/images/offline.png';" 
+                                            width="640" height="480">
+                                        <table class="table table-bordered">
+                                            <tbody>
+                                                <tr>
+                                                    <th scope="row">Camera ID</th>
+                                                    <td>${cam.id}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th scope="row">IP Address</th>
+                                                    <td>${cam.ip_address}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th scope="row">MQTT Topic</th>
+                                                    <td>${cam.topic}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th scope="row">Pan Servo</th>
+                                                    <td>
+                                                        <input type="range" id="pan-${cam.id}" min="0" max="180" 
+                                                            value="${cam.servo_position.pan}" 
+                                                            class="slider" 
+                                                            data-id="${cam.id}" data-type="pan">
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th scope="row">Tilt Servo</th>
+                                                    <td>
+                                                        <input type="range" id="tilt-${cam.id}" min="0" max="180" 
+                                                            value="${cam.servo_position.tilt}" 
+                                                            class="slider" 
+                                                            data-id="${cam.id}" data-type="tilt">
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th scope="row">Action</th>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-success">
+                                                            <i class="fas fa-edit"></i> Edit
+                                                        </button>
+                                                        <button class="btn btn-delete btn-sm btn-danger" type="button" 
+                                                            onclick="confirmDelete('/delete_camera/${cam.id}')">
+                                                            <i class="fas fa-trash"></i> Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                `;
+
 
 
                         container.appendChild(card);

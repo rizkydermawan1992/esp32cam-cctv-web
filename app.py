@@ -62,24 +62,36 @@ def get_livecam_data():
 @app.route("/add-camera", methods=["POST"])
 def add_camera():
     data = request.get_json()
+
+    # Periksa field yang hilang
     if not all(k in data for k in ("id", "label", "ip_address", "topic")):
-        return jsonify({"error": "Missing required fields"}), 400
+        flash("Missing required fields!", "danger")
+        return redirect(url_for('livecam'))  # Redirect ke halaman utama jika ada kesalahan
 
     try:
-        # Convert ID to integer
+        # Konversi ID ke integer
         data["id"] = int(data["id"])
     except ValueError:
-        return jsonify({"error": "ID must be a numeric value"}), 400
+        flash("ID must be a numeric value!", "danger")
+        return redirect(url_for('livecam'))
 
+    # Baca konfigurasi
     config = read_config()
-    if any(cam["id"] == data["id"] for cam in config["livecam"]["esp32cams"]):
-        return jsonify({"error": "Camera ID already exists"}), 400
 
+    # Periksa apakah ID sudah ada
+    if any(cam["id"] == data["id"] for cam in config["livecam"]["esp32cams"]):
+        flash("Camera ID already exists!", "danger")
+        return redirect(url_for('livecam'))
+
+    # Tambahkan kamera baru ke konfigurasi
     data["servo_position"] = {"pan": 90, "tilt": 90}
     config["livecam"]["esp32cams"].append(data)
     write_config(config)
 
-    return jsonify({"message": "Camera added successfully"}), 201
+    # Flash message untuk sukses
+    flash("Camera added successfully.", "success")
+    return redirect(url_for('livecam'))
+
 
 
 @app.route("/gallery")
@@ -101,6 +113,27 @@ def gallery():
 
     return render_template("gallery.html", images=images_with_timestamps)
 
+@app.route('/delete_camera/<int:cam_id>', methods=['GET'])
+def delete_camera(cam_id):
+    cam_id = int(cam_id)
+    config = read_config()
+    esp32cams = config.get("livecam", {}).get("esp32cams", [])
+
+    # Cari indeks kamera berdasarkan ID
+    index = next((i for i, cam in enumerate(esp32cams) if cam["id"] == cam_id), None)
+    
+    if index is None:
+        flash("Camera not found.", "danger")
+        return redirect(url_for('livecam'))
+
+    # Hapus kamera dari daftar
+    del esp32cams[index]
+    write_config(config)  # Perbarui file konfigurasi
+
+    flash("Camera deleted successfully.", "success")
+    return redirect(url_for('livecam'))
+
+
 @app.route('/delete_image', methods=['POST'])
 def delete_image():
     file_path = os.path.join(app.static_folder, request.form['filename'])
@@ -110,6 +143,7 @@ def delete_image():
     else:
         flash('File not found.', 'error')
     return redirect(url_for('gallery'))
+
 
 @app.route('/update-servo-position', methods=['POST'])
 def update_servo_position():

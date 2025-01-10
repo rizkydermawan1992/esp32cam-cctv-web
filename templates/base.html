@@ -1,19 +1,91 @@
-<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ESP32CAM CCTV system">
+  <meta name="keywords" content="ESP32, CCTV, Flask, Camera">
   <title>{% block title %}ESP32CAM CCTV{% endblock %}</title>
+  
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  
   <!-- Font Awesome -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+  <!-- Tambahkan CSS tambahan di halaman tertentu -->
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
+  <!-- Navbar -->
   {% include "navbar.html" %}
+  
+  <!-- Main Content -->
   <main class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const messages = [
+                        {% for category, message in messages %}
+                        { icon: "{{ category }}", title: "{{ message }}" }{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    ];
+                    
+                    messages.forEach(msg => {
+                        Swal.fire({
+                            icon: msg.icon,
+                            title: msg.title,
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true
+                        });
+                    });
+                });
+            </script>
+        {% endif %}
+    {% endwith %}
+
     {% block content %}{% endblock %}
   </main>
+  
+  <!-- Footer -->
+  {% block footer %}
+  <footer class="text-center py-4">
+    <p>&copy; 2025 ESP32CAM CCTV</p>
+  </footer>
+  {% endblock %}
+
   <!-- Bootstrap Bundle with Popper -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <!-- Tambahkan Script tambahan di halaman tertentu -->
+  {% block extra_js %}{% endblock %}
+
+  <!-- Script untuk SweetAlert Confirm -->
+  <script>
+      function confirmDelete(url) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this action!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Redirect to the URL for deleting the camera
+                window.location.href = url;
+            }
+        });
+    }
+  </script>
+</body>
+</html>
