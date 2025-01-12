@@ -8,36 +8,30 @@
         "chat_id": "441884684",
         "isActive": 1
     },
+    "mqtt": {
+        "broker": "broker.emqx.io",
+        "port": 1883
+    },
     "livecam": {
         "esp32cams": [
             {
                 "id": 1,
-                "label": "Ruang Tamu",
-                "ip_address": "192.168.141.67",
-                "topic": "esp32cam/349eif",
+                "label": "Ruang Kerja",
+                "ip_address": "192.168.220.67",
+                "topic": "esp32cam/292jdq",
                 "servo_position": {
-                    "pan": 14,
-                    "tilt": 175
+                    "pan": 94,
+                    "tilt": 67
                 }
             },
             {
                 "id": 2,
-                "label": "Garage",
-                "ip_address": "192.168.1.103",
-                "topic": "esp32cam/303dkw",
+                "label": "Teras",
+                "ip_address": "192.168.1.4",
+                "topic": "esp32cam/349eifsgfdgfh",
                 "servo_position": {
-                    "pan": 90,
-                    "tilt": 90
-                }
-            },
-            {
-                "id": 3,
-                "label": "Gudang",
-                "ip_address": "192.168.1.102",
-                "topic": "esp32cam/244ffv",
-                "servo_position": {
-                    "pan": 90,
-                    "tilt": 90
+                    "pan": 84,
+                    "tilt": 9
                 }
             }
         ]

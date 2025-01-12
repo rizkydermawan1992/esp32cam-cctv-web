@@ -7,7 +7,7 @@
 const char* ssid = "Realme";
 const char* password = "12345678";
 
-String serverName = "192.168.141.139";   // REPLACE WITH YOUR Raspberry Pi IP ADDRESS
+String serverName = "192.168.220.139";   // REPLACE WITH YOUR Raspberry Pi IP ADDRESS
 //String serverName = "esp32cam-cctv-web.vercel.app";
 String serverPath = "/send_message";     // The serverPath should be upload.php
 const int serverPort = 5000;
@@ -117,14 +117,6 @@ void loop() {
 String sendPhoto() {
   String getAll;
   String getBody;
-
-//  // Ambil gambar setelah gerakan terdeteksi
-//  camera_fb_t * fb = esp_camera_fb_get();
-//  if(!fb) {
-//    Serial.println("Camera capture failed");
-//    delay(1000);
-//    ESP.restart();
-//  }
   
   Serial.println("Connecting to server: " + serverName);
 

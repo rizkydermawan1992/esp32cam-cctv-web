@@ -5,9 +5,11 @@ import os
 from werkzeug.security import check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
+import paho.mqtt.client as mqtt
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
+
 
 CONFIG_FILE = "config.json"
 if not os.path.exists(CONFIG_FILE):
@@ -23,10 +25,66 @@ def write_config(data):
     with open(CONFIG_FILE, 'w') as file:
         json.dump(data, file, indent=4)
 
+# Callback ketika terhubung ke broker
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Connected to MQTT Broker!")
+    else:
+        print(f"Failed to connect, return code {rc}")
+
+# Callback ketika pesan berhasil diterbitkan
+def on_publish(client, userdata, mid):
+    print("Message published.")
+
 config = read_config()
 stored_email = config.get("login", {}).get("email")
 stored_password_hash = config.get("login", {}).get("password")
 telegram_config = config.get("telegram", {})
+
+mqtt_config = config['mqtt']
+BROKER = mqtt_config['broker']
+PORT = mqtt_config['port']
+
+# Inisialisasi MQTT Client
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_publish = on_publish
+
+# Hubungkan ke broker
+client.connect(BROKER, PORT, 60)
+
+def send_pan_tilt():
+    config = read_config()
+    
+    # Ambil data pan dan tilt dari config.json
+    esp32cam = config['livecam']['esp32cams'][0]
+    topic = esp32cam['topic']
+    pan = esp32cam['servo_position']['pan']
+    tilt = esp32cam['servo_position']['tilt']
+
+    # Format data JSON untuk dikirim
+    data = {
+        'pan': pan,
+        'tilt': tilt
+    }
+
+    # Kirim data ke topik MQTT
+    result = client.publish(topic, json.dumps(data))
+    
+    # Periksa hasil pengiriman
+    status = result.rc
+    if status == 0:
+        print(f"Data {data} sent to topic {topic}")
+        # return jsonify({
+        #     "status": "success",
+        #     "message": f"Data {data} sent to topic {topic}."
+        # })
+    else:
+        print(f"failed to send message to topic {topic}")
+        # return jsonify({
+        #     "status": "error",
+        #     "message": f"Failed to send message to topic {topic}."
+        # }), 500
 
 @app.route("/")
 def home():
@@ -92,6 +150,37 @@ def add_camera():
     flash("Camera added successfully.", "success")
     return redirect(url_for('livecam'))
 
+@app.route("/update-camera", methods=["POST"])
+def update_camera():
+    data = request.get_json()
+    try:
+        # Konversi ID ke integer
+        data["id"] = int(data["id"])
+    except ValueError:
+        flash("ID must be a numeric value!", "danger")
+        return redirect(url_for('livecam'))
+
+    # Baca konfigurasi
+    config = read_config()
+    esp32cams = config.get("livecam", {}).get("esp32cams", [])
+
+    # Cari kamera berdasarkan ID
+    camera = next((cam for cam in esp32cams if cam["id"] == data["id"]), None)
+    if not camera:
+        flash("Camera not found!", "danger")
+        return redirect(url_for('livecam'))
+
+    # Perbarui atribut kamera
+    allowed_fields = {"label", "ip_address", "topic", "servo_position"}
+    for key, value in data.items():
+        if key in allowed_fields:
+            camera[key] = value
+
+    # Simpan konfigurasi
+    write_config(config)
+
+    flash("Camera updated successfully.", "success")
+    return redirect(url_for('livecam'))
 
 
 @app.route("/gallery")
@@ -154,7 +243,12 @@ def update_servo_position():
             cam["servo_position"][data["type"]] = data["value"]
             break
     write_config(config)
+    send_pan_tilt()
     return jsonify({'status': 'success', 'message': 'Config updated successfully'})
+
+# Endpoint untuk mengirim data pan dan tilt
+# @app.route('/send_pan_tilt', methods=['POST'])
+
 
 @app.route("/send_message", methods=["POST"])
 def send_message():
@@ -191,4 +285,6 @@ def setting():
     return render_template("setting.html")
 
 if __name__ == "__main__":
+    # Jalankan server Flask
     app.run(host='0.0.0.0', port=5000)
+    
