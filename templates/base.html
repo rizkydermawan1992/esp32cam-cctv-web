@@ -13,6 +13,9 @@
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+
   <!-- Tambahkan CSS tambahan di halaman tertentu -->
   {% block extra_css %}{% endblock %}
 </head>
@@ -22,33 +25,7 @@
   
   <!-- Main Content -->
   <main class="container mt-4">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    const messages = [
-                        {% for category, message in messages %}
-                        { icon: "{{ category }}", title: "{{ message }}" }{% if not loop.last %},{% endif %}
-                        {% endfor %}
-                    ];
-                    
-                    messages.forEach(msg => {
-                        Swal.fire({
-                            icon: msg.icon,
-                            title: msg.title,
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true
-                        });
-                    });
-                });
-            </script>
-        {% endif %}
-    {% endwith %}
-
-    {% block content %}{% endblock %}
+    {% block content %}{% endblock %} 
   </main>
   
   <!-- Footer -->
@@ -67,8 +44,22 @@
   <!-- Tambahkan Script tambahan di halaman tertentu -->
   {% block extra_js %}{% endblock %}
 
-  <!-- Script untuk SweetAlert Confirm -->
+  <!-- Script untuk SweetAlert -->
   <script>
+    function showAlert(status, message, redirectUrl = null) {
+    Swal.fire({
+        icon: status === 'success' ? 'success' : 'error',
+        title: status === 'success' ? 'Success' : 'Failed',
+        text: message,
+        confirmButtonText: 'Okay!'
+    }).then((result) => {
+        if (result.isConfirmed && redirectUrl) {
+            window.location.href = redirectUrl;
+        }
+    });
+}
+
+
       function confirmDelete(url) {
         Swal.fire({
             title: 'Are you sure?',

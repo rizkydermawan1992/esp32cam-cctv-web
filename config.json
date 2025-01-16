@@ -17,21 +17,21 @@
             {
                 "id": 1,
                 "label": "Ruang Kerja",
-                "ip_address": "192.168.220.67",
+                "ip_address": "192.168.168.67",
                 "topic": "esp32cam/292jdq",
                 "servo_position": {
-                    "pan": 94,
-                    "tilt": 67
+                    "pan": 180,
+                    "tilt": 180
                 }
             },
             {
-                "id": 2,
-                "label": "Teras",
-                "ip_address": "192.168.1.4",
-                "topic": "esp32cam/349eifsgfdgfh",
+                "id": 3,
+                "label": "Kantor",
+                "ip_address": "192.168.1.178",
+                "topic": "esp32cam/244ffvef",
                 "servo_position": {
-                    "pan": 84,
-                    "tilt": 9
+                    "pan": 0,
+                    "tilt": 46
                 }
             }
         ]

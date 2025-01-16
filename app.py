@@ -8,7 +8,7 @@ from datetime import datetime
 import paho.mqtt.client as mqtt
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key"
+app.secret_key = "rizkyproject_05061992"
 
 
 CONFIG_FILE = "config.json"
@@ -16,7 +16,6 @@ if not os.path.exists(CONFIG_FILE):
     with open(CONFIG_FILE, "w") as file:
         json.dump({"livecam": {"esp32cams": []}, "login": {}, "telegram": {}}, file)
 
-# Helper functions
 def read_config():
     with open(CONFIG_FILE, 'r') as file:
         return json.load(file)
@@ -53,12 +52,21 @@ client.on_publish = on_publish
 # Hubungkan ke broker
 client.connect(BROKER, PORT, 60)
 
-def send_pan_tilt():
+def send_pan_tilt(topic):
     config = read_config()
-    
-    # Ambil data pan dan tilt dari config.json
-    esp32cam = config['livecam']['esp32cams'][0]
-    topic = esp32cam['topic']
+
+    # Cari ESP32CAM yang sesuai dengan topik
+    esp32cam = None
+    for cam in config['livecam']['esp32cams']:
+        if cam['topic'] == topic:
+            esp32cam = cam
+            break
+
+    if esp32cam is None:
+        print(f"ESP32CAM with topic {topic} not found!")
+        return
+
+    # Ambil data pan dan tilt dari config.json sesuai dengan topik
     pan = esp32cam['servo_position']['pan']
     tilt = esp32cam['servo_position']['tilt']
 
@@ -70,22 +78,14 @@ def send_pan_tilt():
 
     # Kirim data ke topik MQTT
     result = client.publish(topic, json.dumps(data))
-    
+
     # Periksa hasil pengiriman
     status = result.rc
     if status == 0:
         print(f"Data {data} sent to topic {topic}")
-        # return jsonify({
-        #     "status": "success",
-        #     "message": f"Data {data} sent to topic {topic}."
-        # })
     else:
-        print(f"failed to send message to topic {topic}")
-        # return jsonify({
-        #     "status": "error",
-        #     "message": f"Failed to send message to topic {topic}."
-        # }), 500
-
+        print(f"Failed to send message to topic {topic}")
+       
 @app.route("/")
 def home():
     return redirect(url_for("livecam")) if "logged_in" in session else render_template("index.html")
@@ -120,35 +120,29 @@ def get_livecam_data():
 @app.route("/add-camera", methods=["POST"])
 def add_camera():
     data = request.get_json()
-
-    # Periksa field yang hilang
-    if not all(k in data for k in ("id", "label", "ip_address", "topic")):
-        flash("Missing required fields!", "danger")
-        return redirect(url_for('livecam'))  # Redirect ke halaman utama jika ada kesalahan
-
     try:
         # Konversi ID ke integer
         data["id"] = int(data["id"])
     except ValueError:
-        flash("ID must be a numeric value!", "danger")
         return redirect(url_for('livecam'))
 
     # Baca konfigurasi
     config = read_config()
 
-    # Periksa apakah ID sudah ada
+    # Periksa apakah Camera ID sudah ada
     if any(cam["id"] == data["id"] for cam in config["livecam"]["esp32cams"]):
-        flash("Camera ID already exists!", "danger")
-        return redirect(url_for('livecam'))
+        return jsonify({"status": "danger", "message": "camera ID already exists!"})
+    
+    # Periksa apakah topic sudah ada
+    if any(cam["topic"] == data["topic"] for cam in config["livecam"]["esp32cams"]):
+        return jsonify({"status": "danger", "message": "Topic already exists!"})
 
     # Tambahkan kamera baru ke konfigurasi
     data["servo_position"] = {"pan": 90, "tilt": 90}
     config["livecam"]["esp32cams"].append(data)
     write_config(config)
 
-    # Flash message untuk sukses
-    flash("Camera added successfully.", "success")
-    return redirect(url_for('livecam'))
+    return jsonify({"status": "success", "message": "Camera added successfully!"})
 
 @app.route("/update-camera", methods=["POST"])
 def update_camera():
@@ -157,7 +151,6 @@ def update_camera():
         # Konversi ID ke integer
         data["id"] = int(data["id"])
     except ValueError:
-        flash("ID must be a numeric value!", "danger")
         return redirect(url_for('livecam'))
 
     # Baca konfigurasi
@@ -167,7 +160,6 @@ def update_camera():
     # Cari kamera berdasarkan ID
     camera = next((cam for cam in esp32cams if cam["id"] == data["id"]), None)
     if not camera:
-        flash("Camera not found!", "danger")
         return redirect(url_for('livecam'))
 
     # Perbarui atribut kamera
@@ -179,8 +171,7 @@ def update_camera():
     # Simpan konfigurasi
     write_config(config)
 
-    flash("Camera updated successfully.", "success")
-    return redirect(url_for('livecam'))
+    return jsonify({"status": "success", "message": "Camera added successfully!"})
 
 
 @app.route("/gallery")
@@ -212,15 +203,12 @@ def delete_camera(cam_id):
     index = next((i for i, cam in enumerate(esp32cams) if cam["id"] == cam_id), None)
     
     if index is None:
-        flash("Camera not found.", "danger")
         return redirect(url_for('livecam'))
 
     # Hapus kamera dari daftar
     del esp32cams[index]
     write_config(config)  # Perbarui file konfigurasi
-
-    flash("Camera deleted successfully.", "success")
-    return redirect(url_for('livecam'))
+    return jsonify({"status": "success", "message": "Camera deleted successfully!"})
 
 
 @app.route('/delete_image', methods=['POST'])
@@ -228,10 +216,9 @@ def delete_image():
     file_path = os.path.join(app.static_folder, request.form['filename'])
     if os.path.exists(file_path):
         os.remove(file_path)
-        flash('Image deleted successfully!', 'success')
+        return jsonify({"status": "success", "message": "Image deleted successfully!"})
     else:
-        flash('File not found.', 'error')
-    return redirect(url_for('gallery'))
+        return redirect(url_for('gallery'))
 
 
 @app.route('/update-servo-position', methods=['POST'])
@@ -241,13 +228,11 @@ def update_servo_position():
     for cam in config["livecam"]["esp32cams"]:
         if cam["id"] == data["id"]:
             cam["servo_position"][data["type"]] = data["value"]
+            topic = cam["topic"]
             break
     write_config(config)
-    send_pan_tilt()
+    send_pan_tilt(topic)
     return jsonify({'status': 'success', 'message': 'Config updated successfully'})
-
-# Endpoint untuk mengirim data pan dan tilt
-# @app.route('/send_pan_tilt', methods=['POST'])
 
 
 @app.route("/send_message", methods=["POST"])
