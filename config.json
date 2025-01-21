@@ -10,29 +10,54 @@
     },
     "mqtt": {
         "broker": "broker.emqx.io",
-        "port": 1883
+        "port": 1883,
+        "topic": "esp32cam/subs292"
     },
     "livecam": {
         "esp32cams": [
             {
                 "id": 1,
                 "label": "Ruang Kerja",
-                "ip_address": "192.168.168.67",
+                "ip_address": "192.168.83.68",
                 "topic": "esp32cam/292jdq",
                 "servo_position": {
-                    "pan": 180,
-                    "tilt": 180
-                }
+                    "pan": 81,
+                    "tilt": 169
+                },
+                "isActive": 1
             },
             {
-                "id": 3,
-                "label": "Kantor",
-                "ip_address": "192.168.1.178",
-                "topic": "esp32cam/244ffvef",
+                "id": 2,
+                "label": "Ruang Utama",
+                "ip_address": "192.168.83.68",
+                "topic": "esp32cam/6",
                 "servo_position": {
-                    "pan": 0,
-                    "tilt": 46
-                }
+                    "pan": 29,
+                    "tilt": 103
+                },
+                "isActive": 1
+            },
+            {
+                "id": 8,
+                "label": "Ruang Utama",
+                "ip_address": "192.168.83.68",
+                "topic": "esp32cam/343fef",
+                "servo_position": {
+                    "pan": 25,
+                    "tilt": 90
+                },
+                "isActive": 1
+            },
+            {
+                "id": 33,
+                "label": "Teras",
+                "ip_address": "192.168.1.178",
+                "topic": "esp32cam/349e4r",
+                "servo_position": {
+                    "pan": 90,
+                    "tilt": 90
+                },
+                "isActive": 0
             }
         ]
     }

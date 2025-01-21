@@ -51,45 +51,6 @@ const int hdrLen = strlen(HEADER);
 const int bdrLen = strlen(BOUNDARY);
 const int cntLen = strlen(CTNTTYPE);
 
-//void handle_jpg_stream(void) {
-//  char buf[64];
-//  int s;
-//
-//  WiFiClient client = server.client();
-//
-//  // Kirim header MJPEG
-//  client.write(HEADER, hdrLen);
-//  client.write(BOUNDARY, bdrLen);
-//
-//  unsigned long lastFrameTime = millis();
-//  const unsigned long frameDelay = 100; // Delay antar frame (10 FPS)
-//
-//  while (true) {
-//    if (!client.connected())
-//      break;
-//
-//    // Kirim frame hanya jika waktunya sesuai dengan frame rate
-//    if (millis() - lastFrameTime >= frameDelay) {
-//      cam.run();
-//      s = cam.getSize();
-//
-//      if (s > 0) {
-//        client.write(CTNTTYPE, cntLen);
-//        sprintf(buf, "%d\r\n\r\n", s);
-//        client.write(buf, strlen(buf));
-//        client.write((char *)cam.getfb(), s);
-//        client.write(BOUNDARY, bdrLen);
-//      } else {
-//        Serial.println("Failed to capture frame.");
-//      }
-//
-//      lastFrameTime = millis();
-//    }
-//
-//    // Beri waktu bagi CPU
-//    vTaskDelay(1 / portTICK_PERIOD_MS);
-//  }
-//}
 
 
 void handle_jpg_stream(void) {

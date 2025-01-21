@@ -90,11 +90,9 @@
                                         <h5 class="font-weight-bold">${cam.label}</h5>
                                     </div>
                                     <div class="card-body">
-                                        <img src="http://${cam.ip_address}/mjpeg/1" 
-                                            alt="Live view from Camera ${cam.id}" 
-                                            class="img-fluid rounded mb-3" 
-                                            onerror="this.onerror=null;this.src='/static/images/offline.png';" 
-                                            width="640" height="480">
+                                            <img id="camera-img-${cam.id}" src="/static/images/offline.png" 
+                                                alt="Offline" 
+                                                class="img-fluid rounded mb-3" width="640" height="480">
                                         <table class="table table-bordered">
                                             <tbody>
                                                 <tr>
@@ -115,7 +113,7 @@
                                                         <input type="range" id="pan-${cam.id}" min="0" max="180" 
                                                             value="${cam.servo_position.pan}" 
                                                             class="slider" 
-                                                            data-id="${cam.id}" data-type="pan">
+                                                            data-id="${cam.id}" data-type="pan"><label id="label-pan-${cam.id}">${cam.servo_position.pan}</label>
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -124,7 +122,7 @@
                                                         <input type="range" id="tilt-${cam.id}" min="0" max="180" 
                                                             value="${cam.servo_position.tilt}" 
                                                             class="slider" 
-                                                            data-id="${cam.id}" data-type="tilt">
+                                                            data-id="${cam.id}" data-type="tilt"><label id="label-tilt-${cam.id}">${cam.servo_position.tilt}</label>
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -157,6 +155,9 @@
                             const id = parseInt(sliderElement.dataset.id);
                             const type = sliderElement.dataset.type;
                             const value = parseInt(sliderElement.value);
+                            const label = document.getElementById(`label-${type}-${id}`);
+
+                            label.textContent = value;
 
                             // Update servo position on the server
                             fetch('/update-servo-position', {
@@ -176,6 +177,32 @@
                 .catch(error => console.error('Error fetching ESP32-CAM data:', error));
         }
 
+
+        // async function load check device
+        async function loadCheckDevice() {
+            try {
+                const response = await fetch('/check_device');
+                const result = await response.json();
+                // Parsing data json
+                result.forEach(cam => {
+                    const cameraElement = document.getElementById(`camera-img-${cam.id}`);
+                    if (cameraElement) {
+                        if (cam.isActive === 1) {
+                            cameraElement.src = `/video_feed?ip_address=${cam.ip_address}`;
+                            console.log('Camera is active');
+                        } else {
+                            cameraElement.src = '/static/images/offline.png';
+                            console.log('Camera is inactive');
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching ESP32-CAM data:', error);
+            }
+        }
+        // Initial check on page load
+        window.onload = loadCheckDevice();
+    
         // Add event listeners for delete buttons
         document.querySelectorAll('.btn-delete').forEach(button => {
             button.addEventListener('click', event => {
@@ -194,6 +221,7 @@
 
             });
         });
+
 
         document.getElementById('addCameraForm').addEventListener('submit', async (e) => {
             e.preventDefault(); // Mencegah refresh halaman
