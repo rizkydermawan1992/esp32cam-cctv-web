@@ -1,48 +1,55 @@
-import paho.mqtt.client as mqtt
-import json
+import cv2
 
-# Callback saat berhasil terhubung ke broker MQTT
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        print("Terhubung ke broker MQTT.")
-        # Subscribe ke topik yang digunakan ESP32-CAM untuk mengirim data JSON
-        client.subscribe("esp32cam/sensor_data")
-    else:
-        print(f"Gagal terhubung. Kode error: {rc}")
+# Inisialisasi detektor HOG untuk deteksi tubuh
+hog = cv2.HOGDescriptor()
+hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
-# Callback saat pesan diterima dari topik yang di-subscribe
-def on_message(client, userdata, msg):
-    try:
-        print(f"Pesan diterima di topik {msg.topic}:")
-        # Decode payload JSON
-        payload = msg.payload.decode("utf-8")
-        data = json.loads(payload)
-        
-        # Ekstrak parameter dari JSON
-        camera_id = data.get("camera_id")
-        sensor_value = data.get("sensor_value")
-        
-        # Tampilkan hasil
-        print(f"Camera ID: {camera_id}, Sensor Value: {sensor_value}")
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON: {e}")
-    except Exception as e:
-        print(f"Error: {e}")
+# Inisialisasi detektor wajah menggunakan Haar Cascade
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-# Konfigurasi client MQTT
-broker_address = "broker.emqx.io"  # Ganti dengan alamat broker MQTT Anda
-broker_port = 1883                   # Port default untuk MQTT
+# Fungsi untuk deteksi orang dan wajah dalam video
+def detect_people_and_faces(video_source=0):
+    # Buka video atau webcam
+    cap = cv2.VideoCapture(video_source)
+    if not cap.isOpened():
+        print("Tidak dapat membuka video atau webcam!")
+        return
 
-client = mqtt.Client()
-client.on_connect = on_connect
-client.on_message = on_message
+    while True:
+        # Baca frame dari video
+        ret, frame = cap.read()
+        if not ret:
+            print("Tidak dapat membaca frame (akhir video?).")
+            break
 
-# Hubungkan ke broker MQTT
-print("Menghubungkan ke broker MQTT...")
-client.connect(broker_address, broker_port, 60)
+        # Ubah frame ke skala abu-abu (untuk deteksi wajah)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-# Jalankan loop untuk menunggu pesan masuk
-try:
-    client.loop_forever()
-except KeyboardInterrupt:
-    print("\nProgram dihentikan.")
+        # Deteksi tubuh
+        bodies, _ = hog.detectMultiScale(frame, winStride=(8, 8), padding=(8, 8), scale=1.05)
+
+        # Gambar kotak di sekitar tubuh
+        for (x, y, w, h) in bodies:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Warna hijau untuk tubuh
+
+        # Deteksi wajah
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+        # Gambar kotak di sekitar wajah
+        for (x, y, w, h) in faces:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)  # Warna biru untuk wajah
+
+        # Tampilkan frame dengan hasil deteksi
+        cv2.imshow("People and Face Detection", frame)
+
+        # Berhenti jika pengguna menekan tombol 'q'
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Bersihkan resource
+    cap.release()
+    cv2.destroyAllWindows()
+
+# Path video atau gunakan 0 untuk webcam
+video_source = 0  # Ganti dengan path video Anda atau gunakan 0 untuk webcam
+detect_people_and_faces(video_source)

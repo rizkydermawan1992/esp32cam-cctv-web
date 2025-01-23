@@ -16,8 +16,8 @@
 // Informasi broker MQTT
 #define MQTT_BROKER "broker.emqx.io"
 #define MQTT_PORT 1883
-#define MQTT_TOPIC "esp32cam" // Topik untuk publish
-#define MQTT_SUB_TOPIC "esp32cam/292jdq" // Topik untuk subscribe
+#define MQTT_PUB_TOPIC "esp32cam/sub292" // Topik untuk publish
+#define MQTT_SUB_TOPIC "esp32cam/343e" // Topik untuk subscribe
 
 byte cam_id = 1; // ID Kamera
 OV2640 cam;
@@ -29,14 +29,16 @@ Servo panServo;
 Servo tiltServo;
 
 // Pin
-#define buzzerPin 12
-#define pirPin 13
+#define flashPin 4
 #define PAN_SERVO_PIN 14
 #define TILT_SERVO_PIN 15
 
 // Posisi awal servo
 int panPosition = 90;
 int tiltPosition = 90;
+
+// Kondisi awal flash
+boolean flash = 0;
 
 const char JHEADER[] = "HTTP/1.1 200 OK\r\n"
                        "Content-disposition: inline; filename=capture.jpg\r\n"
@@ -122,11 +124,11 @@ void mqtt_callback(char *topic, byte *message, unsigned int length) {
       panPosition = doc["pan"];
       tiltPosition = doc["tilt"];
 
-//      // Pastikan nilai dalam rentang servo
+      // Pastikan nilai dalam rentang servo
       panPosition = constrain(panPosition, 0, 180);
       tiltPosition = constrain(tiltPosition, 0, 180);
 
-//      // Atur posisi servo
+      // Atur posisi servo
       panServo.write(panPosition);
       tiltServo.write(tiltPosition);
 
@@ -134,6 +136,11 @@ void mqtt_callback(char *topic, byte *message, unsigned int length) {
       Serial.print(panPosition);
       Serial.print(", tilt: ");
       Serial.println(tiltPosition);
+    } else if(doc.containsKey("flash")){
+      flash = doc["flash"];
+      digitalWrite(flashPin, flash);
+      Serial.print("Flash: ");
+      Serial.println(flash);
     } else {
       Serial.println("Invalid JSON format: Missing pan or tilt key");
     }
@@ -179,9 +186,7 @@ void setup() {
   tiltServo.attach(TILT_SERVO_PIN);
   panServo.write(panPosition);
   tiltServo.write(tiltPosition);
-
-  pinMode(pirPin, INPUT);
-  pinMode(buzzerPin, OUTPUT);
+  pinMode(flashPin, OUTPUT);
 
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;

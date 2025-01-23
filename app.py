@@ -47,6 +47,7 @@ stored_email = config.get("login", {}).get("email")
 stored_password_hash = config.get("login", {}).get("password")
 telegram_config = config.get("telegram", {})
 
+
 ###############################################################################
 
 #################################### MQTT #####################################
@@ -94,11 +95,11 @@ client.on_message = on_message
 client.connect(BROKER, PORT, 60)
 
 # Jalankan loop untuk menunggu pesan masuk
-def start_mqtt_loop():
-    try:
-        client.loop_forever()
-    except KeyboardInterrupt:
-        print("\nProgram dihentikan.")
+# def start_mqtt_loop():
+#     try:
+#         client.loop_forever()
+#     except KeyboardInterrupt:
+#         print("\nProgram dihentikan.")
 
 #############################################################################
 
@@ -136,6 +137,38 @@ def send_pan_tilt(topic):
     else:
         print(f"Failed to send message to topic {topic}")
 
+def send_flash(topic):
+    config = read_config()
+
+    # Cari ESP32CAM yang sesuai dengan topik
+    esp32cam = None
+    for cam in config['livecam']['esp32cams']:
+        if cam['topic'] == topic:
+            esp32cam = cam
+            break
+
+    if esp32cam is None:
+        print(f"ESP32CAM with topic {topic} not found!")
+        return
+
+    # Ambil data flash dari config.json sesuai dengan topik
+    flash = esp32cam['flash']
+
+    # Format data JSON untuk dikirim
+    data = {
+        'flash': flash
+    }
+
+    # Kirim data ke topik MQTT
+    result = client.publish(topic, json.dumps(data))
+
+    # Periksa hasil pengiriman
+    status = result.rc
+    if status == 0:
+        print(f"Data {data} sent to topic {topic}")
+    else:
+        print(f"Failed to send message to topic {topic}")
+
 # Fungsi untuk mengecek status device (online/offline)
 def is_online(ip_address):
     # Perintah ping tergantung OS
@@ -153,25 +186,103 @@ def open_camera(ip_address):
         return
     return cap
 
+# fungsi deteksi tubuh dan wajah
+import cv2
+
+def detect_human(frame):
+    # Load face cascade classifier
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+    # Convert frame to grayscale for face detection
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Detect faces
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+    if len(faces) > 0:
+        # Draw rectangles around detected faces
+        for (x, y, w, h) in faces:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+    # Return True if faces are detected, otherwise False
+    return len(faces) > 0
+
+# send telegram
+def send_telegram(id_camera):
+    
+    # Dapatkan IP address kamera dari config.json
+    ip_address = get_camera_ip(id_camera)
+    if not ip_address:
+        return f"Camera with ID {id_camera} not found in config.json", 404
+
+    camera = open_camera(ip_address)
+    ret, frame = camera.read()
+    camera.release()
+
+    if not ret:
+        return "Failed to capture image", 500
+
+    # Simpan gambar yang ditangkap
+    upload_folder = os.path.join("static", "uploads")
+    os.makedirs(upload_folder, exist_ok=True)
+    unique_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_capture.jpg"
+    image_path = os.path.join(upload_folder, unique_filename)
+    cv2.imwrite(image_path, frame)
+
+    # Kirim gambar ke Telegram
+    message = "Motion Detected!!!"
+    url = f"https://api.telegram.org/bot{telegram_config['token_telegram']}/sendPhoto"
+    with open(image_path, "rb") as file:
+        response = requests.post(url, data={"chat_id": telegram_config["chat_id"], "caption": message},
+                                 files={"photo": (unique_filename, file, "image/jpeg")})
+         
+
+    # Periksa respons Telegram
+    if response.status_code != 200:
+        return f"Failed to send message: {response.text}", 500
+
+    return
+
 # generate frame
 def generate_frames(ip_address):
+    telegram_sent = False
     url = f"http://{ip_address}/mjpeg/1"  # URL streaming
     cap = cv2.VideoCapture(url)
 
     if not cap.isOpened():
         print(f"[ERROR] Tidak dapat membuka stream dari {url}")
         return
-    # cap = open_camera(ip_address)
 
-    while True:
-        try:
+    try:
+        while True:
             ret, frame = cap.read()
             if not ret:
                 print("[WARNING] Tidak dapat membaca frame. Menghentikan...")
                 break
             
+            # Ambil nilai isDetect dari config.json berdasarkan ip_address
+            config = read_config()
+            esp32cams = config.get("livecam", {}).get("esp32cams", [])
+            
+            # Gunakan pendekatan yang lebih Pythonic untuk mencari nilai isDetect
+            is_detect = next((cam["isDetect"] for cam in esp32cams if cam["ip_address"] == ip_address), 0)
+
+            # mengambil nilai id berdasarkan ip_address
+            id_camera = next((cam["id"] for cam in esp32cams if cam["ip_address"] == ip_address), 0)
+
+            if is_detect == 1:
+                isDetected = detect_human(frame)  
+                if isDetected: 
+                    if not telegram_sent:
+                        print("Human detected!")
+                        # telegram_thread = threading.Thread(target=send_telegram, args=(id_camera,))
+                        # telegram_thread.start()
+                        telegram_sent = True
+                else:
+                    telegram_sent = False
+
             # Encode frame ke format JPEG
-            ret, buffer = cv2.imencode('.jpg', frame)
+            ret, buffer = cv2.imencode('.jpg', frame)    
             if not ret:
                 print("[WARNING] Gagal encode frame ke JPEG. Melewati frame ini...")
                 continue
@@ -182,11 +293,11 @@ def generate_frames(ip_address):
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-        except Exception as e:
-            print(f"[ERROR] Terjadi kesalahan saat membaca stream: {e}")
-            break
-
-    cap.release()
+    except Exception as e:
+        print(f"Terjadi kesalahan saat membaca stream: {e}")
+    finally:
+        cap.release()
+        print("Streaming dihentikan.")
     
 ##################################### FLASK ######################################################      
 
@@ -260,14 +371,46 @@ def add_camera():
     # Periksa apakah topic sudah ada
     if any(cam["topic"] == data["topic"] for cam in config["livecam"]["esp32cams"]):
         return jsonify({"status": "danger", "message": "Topic already exists!"})
+    
+    # periksa apakah ip address sudah ada
+    if any(cam["ip_address"] == data["ip_address"] for cam in config["livecam"]["esp32cams"]):
+        return jsonify({"status": "danger", "message": "IP address already exists!"})
 
     # Tambahkan kamera baru ke konfigurasi
     data["servo_position"] = {"pan": 90, "tilt": 90}
     data["isActive"] = 0
+    data["isDetect"] = 0
+    data["flash"] = 0
     config["livecam"]["esp32cams"].append(data)
     write_config(config)
 
     return jsonify({"status": "success", "message": "Camera added successfully!"})
+
+# toggle detection
+@app.route("/toggle-detection", methods=["POST"])
+def toggle_detection():
+    data = request.get_json()
+    config = read_config()
+    for cam in config["livecam"]["esp32cams"]:
+        if cam["id"] == data["id"]:
+            cam["isDetect"] = int(data["detection"])
+            break
+    write_config(config)
+    return jsonify({"status": "success", "message": "Detection toggled successfully!"})
+
+@app.route("/toggle-flash", methods=["POST"])
+def toggle_flash():
+    data = request.get_json()
+    config = read_config()
+    topic = None
+    for cam in config["livecam"]["esp32cams"]:
+        if cam["id"] == data["id"]:
+            cam["flash"] = int(data["flash"])
+            topic = cam["topic"]
+            break
+    write_config(config)
+    send_flash(topic)
+    return jsonify({"status": "success", "message": "Flash toggled successfully!"})
 
 @app.route("/update-camera", methods=["POST"])
 def update_camera():
@@ -437,9 +580,9 @@ def setting():
 
 if __name__ == "__main__":
     # Jalankan MQTT loop di thread terpisah
-    mqtt_thread = threading.Thread(target=start_mqtt_loop)
-    mqtt_thread.daemon = True  # Pastikan thread berhenti saat program utama dihentikan
-    mqtt_thread.start()
+    # mqtt_thread = threading.Thread(target=start_mqtt_loop)
+    # mqtt_thread.daemon = True  # Pastikan thread berhenti saat program utama dihentikan
+    # mqtt_thread.start()
 
     # Jalankan server Flask
     app.run(host='0.0.0.0', port=5000)

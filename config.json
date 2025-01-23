@@ -22,31 +22,11 @@
                 "topic": "esp32cam/292jdq",
                 "servo_position": {
                     "pan": 81,
-                    "tilt": 169
+                    "tilt": 139
                 },
-                "isActive": 1
-            },
-            {
-                "id": 2,
-                "label": "Ruang Utama",
-                "ip_address": "192.168.83.68",
-                "topic": "esp32cam/6",
-                "servo_position": {
-                    "pan": 29,
-                    "tilt": 103
-                },
-                "isActive": 1
-            },
-            {
-                "id": 8,
-                "label": "Ruang Utama",
-                "ip_address": "192.168.83.68",
-                "topic": "esp32cam/343fef",
-                "servo_position": {
-                    "pan": 25,
-                    "tilt": 90
-                },
-                "isActive": 1
+                "isActive": 0,
+                "isDetect": 1,
+                "flash": 0
             },
             {
                 "id": 33,
@@ -57,7 +37,22 @@
                     "pan": 90,
                     "tilt": 90
                 },
-                "isActive": 0
+                "isActive": 0,
+                "isDetect": 1,
+                "flash": 0
+            },
+            {
+                "id": 4,
+                "label": "Ruang Admin",
+                "ip_address": "192.168.250.67",
+                "topic": "esp32cam/343e",
+                "servo_position": {
+                    "pan": 115,
+                    "tilt": 178
+                },
+                "isActive": 1,
+                "isDetect": 0,
+                "flash": 0
             }
         ]
     }

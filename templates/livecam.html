@@ -126,13 +126,28 @@
                                                     </td>
                                                 </tr>
                                                 <tr>
+                                                    <th scope="row">Detection</th>
+                                                    <td>
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input detection-toggle" type="checkbox" id="${cam.id}"  ${cam.isDetect ? 'checked' : ''} data-id="${cam.id}" onchange="toggleDetection(this)">
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th scope="row">Flash</th>
+                                                    <td>
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input flash-toggle" type="checkbox" id="${cam.id}"  ${cam.flash ? 'checked' : ''} data-id="${cam.id}" onchange="toggleFlash(this)">
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
                                                     <th scope="row">Action</th>
                                                     <td>
-                                                        <button type="button" class="btn btn-sm btn-success">
+                                                        <button type="button" id="btn-edit" class="btn btn-sm btn-success">
                                                             <i class="fas fa-edit"></i> Edit
                                                         </button>
-                                                        <button class="btn btn-delete btn-sm btn-danger" type="button" 
-                                                            onclick="confirmDelete('/delete_camera/${cam.id}')">
+                                                        <button type="button" id="btn-delete" class="btn btn-sm btn-danger" onclick="confirmDelete('/delete_camera/${cam.id}')">
                                                             <i class="fas fa-trash"></i> Delete
                                                         </button>
                                                     </td>
@@ -200,9 +215,8 @@
                 console.error('Error fetching ESP32-CAM data:', error);
             }
         }
-        // Initial check on page load
-        window.onload = loadCheckDevice();
-    
+
+
         // Add event listeners for delete buttons
         document.querySelectorAll('.btn-delete').forEach(button => {
             button.addEventListener('click', event => {
@@ -244,8 +258,88 @@
 
         });
 
+
+        // Fungsi untuk meng-handle toggle switch detection
+        async function toggleDetection(toggleElement) {
+            // Mendapatkan ID kamera dari atribut data-id
+            const id = parseInt(toggleElement.dataset.id);
+
+            // Mendapatkan status deteksi (on/off) dari elemen toggle
+            const detection = toggleElement.checked;
+
+            try {
+                // Mengirim data ke server menggunakan metode POST
+                const response = await fetch('/toggle-detection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id,
+                        detection
+                    }) // Data yang dikirimkan ke server
+                });
+
+                // // Parsing respons dari server
+                // const result = await response.json();
+
+                // // Menangani respons dari server
+                // if (response.ok) {
+                //     // Jika berhasil, tampilkan alert
+                //     showAlert(result.status, result.message, '/livecam');
+                // } else {
+                //     // Jika gagal, log error
+                //     console.error('Error toggling detection:', result.message);
+                // }
+            } catch (error) {
+                // Menangani error jaringan atau server
+                console.error('Error toggling detection:', error);
+            }
+        }
+
+        // Fungsi untuk toggle switch flash
+        async function toggleFlash(toggleElement) {
+            // Mendapatkan ID kamera dari atribut data-id
+            const id = parseInt(toggleElement.dataset.id);
+
+            // Mendapatkan status flash (on/off) dari elemen toggle
+            const flash = toggleElement.checked;
+
+            try {
+                // Mengirim data ke server menggunakan metode POST
+                const response = await fetch('/toggle-flash', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id,
+                        flash
+                    }) // Data yang dikirimkan ke server
+                });
+
+                // // Parsing respons dari server
+                // const result = await response.json();
+
+                // // Menangani respons dari server
+                // if (response.ok) {
+                //     // Jika berhasil, tampilkan alert
+                //     showAlert(result.status, result.message, '/livecam');
+                // } else {
+                //     // Jika gagal, log error
+                //     console.error('Error toggling flash:', result.message);
+                // }
+            } catch (error) {
+                // Menangani error jaringan atau server
+                console.error('Error toggling flash:', error);
+            }
+        }
+
         // Initial load
-        loadCameras();
+        window.onload = () => {
+            loadCameras();
+            loadCheckDevice();
+        };
     </script>
     {% endblock %}
 </body>
